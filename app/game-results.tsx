@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
-import { commonStyles, colors, buttonStyles } from '../styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { commonStyles, colors, buttonStyles } from '../styles/commonStyles';
 import Icon from '../components/Icon';
+import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
 
 interface Player {
   id: string;
@@ -12,7 +12,8 @@ interface Player {
   isHost: boolean;
   ready: boolean;
   score?: number;
-  reactionTime?: number;
+  territories?: number;
+  color?: string;
 }
 
 export default function GameResultsScreen() {
@@ -35,73 +36,160 @@ export default function GameResultsScreen() {
   }, [playersParam]);
 
   const handlePlayAgain = () => {
-    console.log('Play again pressed');
+    console.log('Play again clicked');
     router.push({
-      pathname: '/create-game',
+      pathname: '/game-lobby',
+      params: { 
+        gameCode,
+        playerName,
+        players: JSON.stringify(players.map(p => ({ ...p, ready: false })))
+      }
     });
   };
 
   const handleBackHome = () => {
-    console.log('Back to home pressed');
+    console.log('Back to home clicked');
     router.push('/');
   };
 
-  const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
-  const winner = sortedPlayers[0];
-  const playerRank = sortedPlayers.findIndex(p => p.name === playerName) + 1;
-
   const getRankEmoji = (rank: number) => {
     switch (rank) {
-      case 1: return '🥇';
+      case 1: return '🏆';
       case 2: return '🥈';
       case 3: return '🥉';
-      default: return '🏅';
+      default: return '🎖️';
     }
   };
 
   const getRankColor = (rank: number) => {
     switch (rank) {
       case 1: return colors.accent;
-      case 2: return colors.textSecondary;
+      case 2: return '#C0C0C0';
       case 3: return '#CD7F32';
-      default: return colors.primary;
+      default: return colors.textSecondary;
     }
   };
+
+  const sortedPlayers = [...players].sort((a, b) => (b.territories || 0) - (a.territories || 0));
+  const winner = sortedPlayers[0];
+  const currentPlayer = players.find(p => p.name === playerName);
+  const currentPlayerRank = sortedPlayers.findIndex(p => p.name === playerName) + 1;
 
   return (
     <SafeAreaView style={commonStyles.container}>
       <ScrollView contentContainerStyle={commonStyles.content}>
         <View style={{ alignItems: 'center', marginBottom: 30 }}>
-          <Text style={{ fontSize: 60, marginBottom: 16 }}>
-            {getRankEmoji(playerRank)}
-          </Text>
-          <Text style={commonStyles.title}>
-            {playerRank === 1 ? 'Félicitations !' : 'Bien joué !'}
-          </Text>
+          <Text style={commonStyles.title}>Résultats de la Partie</Text>
           <Text style={commonStyles.textSecondary}>
-            {playerRank === 1 
-              ? 'Vous avez gagné la partie !' 
-              : `Vous êtes ${playerRank}${playerRank === 2 ? 'ème' : playerRank === 3 ? 'ème' : 'ème'} !`
-            }
+            Conquête de Territoires - Code: {gameCode}
           </Text>
         </View>
 
-        <View style={commonStyles.card}>
-          <Text style={[commonStyles.subtitle, { marginBottom: 20, textAlign: 'center' }]}>
-            🏆 Classement Final
+        {/* Winner Announcement */}
+        <View style={[commonStyles.gameCard, { marginBottom: 30 }]}>
+          <Text style={{ fontSize: 60, marginBottom: 16 }}>
+            {winner?.name === playerName ? '🎉' : '👑'}
+          </Text>
+          
+          <Text style={[commonStyles.subtitle, { color: winner?.color || colors.accent }]}>
+            {winner?.name === playerName ? 'Félicitations !' : `${winner?.name} a gagné !`}
+          </Text>
+          
+          <Text style={[commonStyles.textSecondary, { marginTop: 8 }]}>
+            {winner?.territories || 0} territoires conquis
+          </Text>
+
+          {winner?.name === playerName && (
+            <View style={{
+              backgroundColor: colors.success + '20',
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              marginTop: 16,
+            }}>
+              <Text style={{
+                color: colors.success,
+                fontSize: 14,
+                fontWeight: '600',
+              }}>
+                Victoire ! 🎊
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Personal Stats */}
+        {currentPlayer && (
+          <View style={[commonStyles.card, { marginBottom: 20 }]}>
+            <Text style={[commonStyles.subtitle, { marginBottom: 16 }]}>
+              Vos Statistiques
+            </Text>
+            
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+            }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 32, marginBottom: 8 }}>
+                  {getRankEmoji(currentPlayerRank)}
+                </Text>
+                <Text style={{
+                  fontSize: 24,
+                  fontWeight: '800',
+                  color: getRankColor(currentPlayerRank),
+                }}>
+                  #{currentPlayerRank}
+                </Text>
+                <Text style={commonStyles.textSecondary}>
+                  Position
+                </Text>
+              </View>
+              
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                  fontSize: 32,
+                  fontWeight: '800',
+                  color: colors.primary,
+                  marginBottom: 8,
+                }}>
+                  {currentPlayer.territories || 0}
+                </Text>
+                <Text style={commonStyles.textSecondary}>
+                  Territoires
+                </Text>
+              </View>
+              
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{
+                  fontSize: 32,
+                  fontWeight: '800',
+                  color: colors.accent,
+                  marginBottom: 8,
+                }}>
+                  {Math.round(((currentPlayer.territories || 0) / 36) * 100)}%
+                </Text>
+                <Text style={commonStyles.textSecondary}>
+                  Contrôle
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Full Rankings */}
+        <View style={[commonStyles.card, { marginBottom: 30 }]}>
+          <Text style={[commonStyles.subtitle, { marginBottom: 16 }]}>
+            Classement Final
           </Text>
           
           {sortedPlayers.map((player, index) => (
             <View key={player.id} style={[
               commonStyles.playerCard,
-              {
-                backgroundColor: player.name === playerName 
-                  ? colors.primary + '20' 
-                  : index === 0 
-                    ? colors.accent + '10'
-                    : colors.backgroundAlt,
-                borderWidth: player.name === playerName ? 2 : 0,
-                borderColor: colors.primary,
+              player.name === playerName && { 
+                backgroundColor: colors.primary + '20',
+                borderWidth: 2,
+                borderColor: colors.primary + '40',
               }
             ]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -109,7 +197,7 @@ export default function GameResultsScreen() {
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: getRankColor(index + 1),
+                  backgroundColor: player.color || getRankColor(index + 1),
                   justifyContent: 'center',
                   alignItems: 'center',
                   marginRight: 16,
@@ -122,110 +210,80 @@ export default function GameResultsScreen() {
                     {index + 1}
                   </Text>
                 </View>
-                <View>
+                
+                <View style={{ flex: 1 }}>
                   <Text style={{
                     fontSize: 18,
                     fontWeight: '600',
                     color: colors.text,
+                    marginBottom: 4,
                   }}>
                     {player.name}
                     {player.name === playerName && ' (Vous)'}
+                    {index === 0 && ' 👑'}
                   </Text>
+                  
                   <Text style={{
                     fontSize: 14,
                     color: colors.textSecondary,
                   }}>
-                    Temps moyen: {Math.round(player.reactionTime || 0)}ms
+                    {player.territories || 0} territoires • {Math.round(((player.territories || 0) / 36) * 100)}% de contrôle
                   </Text>
                 </View>
-              </View>
-              
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{
-                  fontSize: 20,
-                  fontWeight: '800',
-                  color: getRankColor(index + 1),
-                }}>
-                  {Math.round(player.score || 0)}
-                </Text>
-                <Text style={{
-                  fontSize: 12,
-                  color: colors.textSecondary,
-                }}>
-                  points
+                
+                <Text style={{ fontSize: 24 }}>
+                  {getRankEmoji(index + 1)}
                 </Text>
               </View>
             </View>
           ))}
         </View>
 
-        <View style={commonStyles.card}>
-          <Text style={[commonStyles.subtitle, { marginBottom: 16, textAlign: 'center' }]}>
-            📊 Statistiques
-          </Text>
-          
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{
-                fontSize: 24,
-                fontWeight: '800',
-                color: colors.primary,
-              }}>
-                {gameCode}
-              </Text>
-              <Text style={commonStyles.textSecondary}>Code partie</Text>
-            </View>
-            
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{
-                fontSize: 24,
-                fontWeight: '800',
-                color: colors.success,
-              }}>
-                {players.length}
-              </Text>
-              <Text style={commonStyles.textSecondary}>Joueurs</Text>
-            </View>
-            
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{
-                fontSize: 24,
-                fontWeight: '800',
-                color: colors.accent,
-              }}>
-                3
-              </Text>
-              <Text style={commonStyles.textSecondary}>Manches</Text>
-            </View>
-          </View>
-        </View>
-
+        {/* Action Buttons */}
         <View style={commonStyles.buttonContainer}>
           <TouchableOpacity
             style={[buttonStyles.primary, { width: '100%' }]}
             onPress={handlePlayAgain}
           >
-            <Text style={{
-              color: colors.background,
-              fontSize: 18,
-              fontWeight: '600',
-            }}>
-              Rejouer
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Icon name="refresh" size={20} color={colors.background} />
+              <Text style={{
+                color: colors.background,
+                fontSize: 16,
+                fontWeight: '600',
+                marginLeft: 8,
+              }}>
+                Rejouer
+              </Text>
+            </View>
           </TouchableOpacity>
-
+          
           <TouchableOpacity
             style={[buttonStyles.secondary, { width: '100%' }]}
             onPress={handleBackHome}
           >
-            <Text style={{
-              color: colors.text,
-              fontSize: 16,
-              fontWeight: '500',
-            }}>
-              Retour à l&apos;accueil
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Icon name="home" size={20} color={colors.text} />
+              <Text style={{
+                color: colors.text,
+                fontSize: 16,
+                fontWeight: '600',
+                marginLeft: 8,
+              }}>
+                Retour à l&apos;accueil
+              </Text>
+            </View>
           </TouchableOpacity>
+        </View>
+
+        {/* Game Summary */}
+        <View style={[commonStyles.card, { marginTop: 20, backgroundColor: colors.backgroundAlt }]}>
+          <Text style={[commonStyles.textSecondary, { textAlign: 'center', fontSize: 12 }]}>
+            🎮 Partie de Conquête de Territoires terminée
+          </Text>
+          <Text style={[commonStyles.textSecondary, { textAlign: 'center', fontSize: 12, marginTop: 4 }]}>
+            {players.length} joueurs • Code: {gameCode}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
