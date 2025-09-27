@@ -28,23 +28,25 @@ export default function JoinGameScreen() {
       return;
     }
 
-    console.log('Joining game with code:', gameCode, 'and name:', playerName);
+    console.log('Attempting to join game with code:', gameCode, 'and name:', playerName);
     
-    // Simulate joining a game
-    const mockPlayers = [
-      { id: 'host', name: 'Hôte', isHost: true, ready: true },
-      { id: 'player1', name: playerName, isHost: false, ready: false },
-    ];
-
-    router.push({
-      pathname: '/game-lobby',
-      params: { 
-        gameCode,
-        playerName,
-        isHost: 'false',
-        players: JSON.stringify(mockPlayers)
-      }
-    });
+    // Simuler la recherche d'une partie
+    // Dans une vraie application, ceci ferait une requête au serveur
+    Alert.alert(
+      'Partie non trouvée',
+      `Aucune partie active trouvée avec le code "${gameCode}". Vérifiez le code ou demandez à l'hôte de créer une nouvelle partie.`,
+      [
+        {
+          text: 'Réessayer',
+          style: 'default'
+        },
+        {
+          text: 'Créer une partie',
+          style: 'default',
+          onPress: () => router.push('/create-game')
+        }
+      ]
+    );
   };
 
   const handleBack = () => {
@@ -131,10 +133,27 @@ export default function JoinGameScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={{ marginTop: 30, alignItems: 'center' }}>
-          <Text style={commonStyles.textSecondary}>
-            Demandez le code à l&apos;hôte de la partie
+        <View style={[commonStyles.card, { marginTop: 20, backgroundColor: colors.accent + '20' }]}>
+          <Icon name="information-circle" size={24} color={colors.accent} />
+          <Text style={[commonStyles.textSecondary, { marginTop: 8, textAlign: 'center' }]}>
+            <Text style={{ fontWeight: '600' }}>Note :</Text> Cette fonctionnalité nécessite un serveur backend pour connecter les joueurs en temps réel. 
+            Pour l'instant, vous pouvez créer une partie locale et ajouter des joueurs sur le même appareil.
           </Text>
+        </View>
+
+        <View style={{ marginTop: 20, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[buttonStyles.secondary, { width: '100%' }]}
+            onPress={() => router.push('/create-game')}
+          >
+            <Text style={{
+              color: colors.text,
+              fontSize: 16,
+              fontWeight: '600',
+            }}>
+              Créer une partie locale à la place
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

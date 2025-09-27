@@ -21,23 +21,6 @@ export default function CreateGameScreen() {
 
   console.log('CreateGameScreen rendered');
 
-  useEffect(() => {
-    if (gameCreated) {
-      // Simulate other players joining
-      const timer = setTimeout(() => {
-        const newPlayer: Player = {
-          id: Math.random().toString(),
-          name: `Joueur ${Math.floor(Math.random() * 100)}`,
-          isHost: false,
-          ready: false,
-        };
-        setPlayers(prev => [...prev, newPlayer]);
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [gameCreated]);
-
   const generateGameCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
@@ -64,11 +47,12 @@ export default function CreateGameScreen() {
   };
 
   const handleStartGame = () => {
-    if (players.length < 2) {
-      Alert.alert('Attention', 'Il faut au moins 2 joueurs pour commencer');
+    if (players.length < 1) {
+      Alert.alert('Erreur', 'Impossible de démarrer la partie');
       return;
     }
 
+    // Pour une partie solo ou locale, on peut commencer avec un seul joueur
     console.log('Starting game with players:', players);
     router.push({
       pathname: '/game',
@@ -84,6 +68,23 @@ export default function CreateGameScreen() {
   const handleBack = () => {
     console.log('Going back to home');
     router.back();
+  };
+
+  const handleAddLocalPlayer = () => {
+    const playerNumber = players.length + 1;
+    const newPlayer: Player = {
+      id: `player_${Date.now()}`,
+      name: `Joueur ${playerNumber}`,
+      isHost: false,
+      ready: true,
+    };
+    
+    setPlayers(prev => [...prev, newPlayer]);
+  };
+
+  const handleRemovePlayer = (playerId: string) => {
+    if (playerId === 'host') return; // Ne peut pas supprimer l'hôte
+    setPlayers(prev => prev.filter(player => player.id !== playerId));
   };
 
   const togglePlayerReady = (playerId: string) => {
@@ -169,7 +170,7 @@ export default function CreateGameScreen() {
       <ScrollView contentContainerStyle={commonStyles.content}>
         <View style={{ alignItems: 'center', marginBottom: 30 }}>
           <Icon name="people" size={60} color={colors.success} />
-          <Text style={commonStyles.title}>Salle d&apos;attente</Text>
+          <Text style={commonStyles.title}>Configuration de la partie</Text>
           <View style={{
             backgroundColor: colors.backgroundAlt,
             paddingHorizontal: 20,
@@ -187,7 +188,7 @@ export default function CreateGameScreen() {
             </Text>
           </View>
           <Text style={commonStyles.textSecondary}>
-            Partagez ce code avec vos amis
+            Code de la partie (pour référence)
           </Text>
         </View>
 
@@ -215,59 +216,81 @@ export default function CreateGameScreen() {
                 </Text>
               </View>
               
-              <View style={{
-                backgroundColor: player.ready ? colors.success : colors.textSecondary,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 16,
-              }}>
-                <Text style={{
-                  color: colors.background,
-                  fontSize: 12,
-                  fontWeight: '600',
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  backgroundColor: player.ready ? colors.success : colors.textSecondary,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 16,
+                  marginRight: 8,
                 }}>
-                  {player.ready ? 'Prêt' : 'En attente'}
-                </Text>
+                  <Text style={{
+                    color: colors.background,
+                    fontSize: 12,
+                    fontWeight: '600',
+                  }}>
+                    {player.ready ? 'Prêt' : 'En attente'}
+                  </Text>
+                </View>
+                
+                {!player.isHost && (
+                  <TouchableOpacity
+                    onPress={() => handleRemovePlayer(player.id)}
+                    style={{
+                      padding: 4,
+                    }}
+                  >
+                    <Icon name="close-circle" size={20} color={colors.danger} />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))}
 
           {players.length < 4 && (
-            <View style={[commonStyles.playerCard, { opacity: 0.5 }]}>
+            <TouchableOpacity
+              style={[commonStyles.playerCard, { 
+                borderStyle: 'dashed',
+                borderColor: colors.primary,
+                backgroundColor: colors.primary + '10'
+              }]}
+              onPress={handleAddLocalPlayer}
+            >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Icon name="person-add" size={20} color={colors.textSecondary} />
+                <Icon name="person-add" size={20} color={colors.primary} />
                 <Text style={{
                   marginLeft: 12,
                   fontSize: 16,
-                  color: colors.textSecondary,
+                  color: colors.primary,
+                  fontWeight: '500',
                 }}>
-                  En attente d&apos;un joueur...
+                  Ajouter un joueur local
                 </Text>
               </View>
-            </View>
+              <Icon name="add" size={20} color={colors.primary} />
+            </TouchableOpacity>
           )}
         </View>
 
         <View style={commonStyles.buttonContainer}>
           <TouchableOpacity
-            style={[
-              buttonStyles.primary, 
-              { 
-                width: '100%',
-                opacity: players.length < 2 ? 0.5 : 1 
-              }
-            ]}
+            style={[buttonStyles.primary, { width: '100%' }]}
             onPress={handleStartGame}
-            disabled={players.length < 2}
           >
             <Text style={{
               color: colors.background,
               fontSize: 18,
               fontWeight: '600',
             }}>
-              Commencer la partie ({players.length}/4)
+              Commencer la partie ({players.length} joueur{players.length > 1 ? 's' : ''})
             </Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={{ marginTop: 20, alignItems: 'center' }}>
+          <Text style={[commonStyles.textSecondary, { textAlign: 'center' }]}>
+            💡 Vous pouvez jouer seul ou ajouter des joueurs locaux pour jouer à plusieurs sur le même appareil
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

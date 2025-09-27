@@ -34,9 +34,9 @@ export default function GameLobbyScreen() {
   }, [playersParam]);
 
   useEffect(() => {
-    // Simulate game starting when all players are ready
-    const allReady = players.length >= 2 && players.every(player => player.ready);
-    if (allReady) {
+    // Démarrer automatiquement si tous les joueurs sont prêts
+    const allReady = players.length >= 1 && players.every(player => player.ready);
+    if (allReady && players.length > 0) {
       const timer = setTimeout(() => {
         console.log('All players ready, starting game');
         router.push({
@@ -48,7 +48,7 @@ export default function GameLobbyScreen() {
             players: JSON.stringify(players)
           }
         });
-      }, 2000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
@@ -58,7 +58,7 @@ export default function GameLobbyScreen() {
     const newReadyState = !isReady;
     setIsReady(newReadyState);
     
-    // Update current player's ready state
+    // Mettre à jour l'état de préparation du joueur actuel
     setPlayers(prev => prev.map(player => 
       player.name === playerName 
         ? { ...player, ready: newReadyState }
@@ -71,7 +71,7 @@ export default function GameLobbyScreen() {
     router.push('/');
   };
 
-  const allPlayersReady = players.length >= 2 && players.every(player => player.ready);
+  const allPlayersReady = players.length >= 1 && players.every(player => player.ready);
 
   return (
     <SafeAreaView style={commonStyles.container}>
@@ -131,7 +131,10 @@ export default function GameLobbyScreen() {
           </Text>
           
           {players.map((player) => (
-            <View key={player.id} style={commonStyles.playerCard}>
+            <View key={player.id} style={[
+              commonStyles.playerCard,
+              player.name === playerName && { backgroundColor: colors.primary + '20' }
+            ]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Icon 
                   name={player.isHost ? "star" : "person"} 
@@ -187,8 +190,11 @@ export default function GameLobbyScreen() {
         </View>
 
         <View style={{ marginTop: 20, alignItems: 'center' }}>
-          <Text style={commonStyles.textSecondary}>
-            En attente que tous les joueurs soient prêts
+          <Text style={[commonStyles.textSecondary, { textAlign: 'center' }]}>
+            {allPlayersReady 
+              ? 'Tous les joueurs sont prêts ! Démarrage...' 
+              : 'En attente que tous les joueurs soient prêts'
+            }
           </Text>
         </View>
       </ScrollView>
